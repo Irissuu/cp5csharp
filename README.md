@@ -1,4 +1,4 @@
-# ElysiaAPI 📱🏍️
+# ElysiaAPI - CP5
 
 API RESTful desenvolvida em .NET 8 com Entity Framework Core e Oracle, parte do projeto **Elysia: Inteligência para Gestão Inteligente de Pátios** da empresa Mottu. Esta API permite o gerenciamento de **motos** e **vagas de estacionamento**, com foco em uma solução inteligente para controle de pátios.
 
@@ -15,11 +15,13 @@ Taís Tavares Alves - 557553 - 2TDSPM
 - Oracle Database
 - Swagger (OpenAPI)
 - Clean Architecture (camadas Domain, Infrastructure, Application)
+- MongoDB
+- Health Check
 ```
 
 ### 1. Clone o repositório
 ```text
-git clone https://github.com/Irissuu/cp4csharp.git
+git clone https://github.com/Irissuu/cp5csharp.git
 ```
 
 ### 2. Configure a string de conexão
