@@ -31,5 +31,14 @@ namespace ElysiaAPI.Domain.Entity
             Modelo = modelo.Trim();
             Ano = ano;
         }
+        
+        public void DefinirId(int novoId)
+        {
+            if (novoId <= 0) throw new ArgumentException("Id inválido.");
+            if (this.Id != 0 && this.Id != novoId)
+                throw new InvalidOperationException("Id já foi definido e não pode ser alterado.");
+            this.Id = novoId; // use this.Id para evitar ambiguidade
+        }
+
     }
 }

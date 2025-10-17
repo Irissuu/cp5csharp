@@ -4,6 +4,9 @@ using ElysiaAPI.Domain.Entity;
 public interface IVagaRepository
 {
     Task<Vaga?> GetByIdAsync(int id, CancellationToken ct = default);
+    Task<IReadOnlyList<Vaga>> ListAsync(CancellationToken ct = default);
     Task AddAsync(Vaga vaga, CancellationToken ct = default);
+    Task<bool> UpdateAsync(int id, Vaga vaga, CancellationToken ct = default);
+    Task<bool> DeleteAsync(int id, CancellationToken ct = default);
     Task<bool> ExistsPatioNumeroAsync(string patio, int numero, CancellationToken ct = default);
 }
