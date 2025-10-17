@@ -23,7 +23,6 @@
 
   <ItemGroup>
     <Folder Include="Api\" />
-    <Folder Include="Application\UseCases\Motos\" />
   </ItemGroup>
 
 </Project>
