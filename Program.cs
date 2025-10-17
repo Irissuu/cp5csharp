@@ -1,4 +1,4 @@
-
+using ElysiaAPI.Application.Services;
 using ElysiaAPI.Domain.Repositories;
 using ElysiaAPI.Infrastructure.Mongo;
 using ElysiaAPI.Infrastructure.Repositories;
@@ -12,7 +12,8 @@ builder.Services.AddSingleton<MongoDbContext>();
 builder.Services.AddScoped<IMotoRepository, MotoRepositoryMongo>();
 builder.Services.AddScoped<IVagaRepository, VagaRepositoryMongo>();
 
-
+builder.Services.AddScoped<MotoService>();
+builder.Services.AddScoped<VagaService>();
 
 builder.Services.AddControllers();
 builder.Services.AddRouting(o => o.LowercaseUrls = true);
