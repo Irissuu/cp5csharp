@@ -1,3 +1,5 @@
+using Asp.Versioning;
+using Asp.Versioning.ApiExplorer;
 using ElysiaAPI.Application.Services;
 using ElysiaAPI.Domain.Repositories;
 using ElysiaAPI.Infrastructure.Mongo;
@@ -18,25 +20,38 @@ builder.Services.AddScoped<VagaService>();
 builder.Services.AddControllers();
 builder.Services.AddRouting(o => o.LowercaseUrls = true);
 
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ReportApiVersions = true;
+})
+.AddApiExplorer(options =>
+{
+    options.GroupNameFormat = "'v'VVV";
+    options.SubstituteApiVersionInUrl = true;
+});
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
+builder.Services.AddSwaggerGen(opt =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Elysia API", Version = "v1", Description = "API v1" });
-    c.SwaggerDoc("v2", new OpenApiInfo { Title = "Elysia API", Version = "v2", Description = "API v2" });
+    opt.SwaggerDoc("v1", new OpenApiInfo { Title = "Elysia API", Version = "v1", Description = "API v1" });
+    opt.SwaggerDoc("v2", new OpenApiInfo { Title = "Elysia API", Version = "v2", Description = "API v2" });
 });
 
 builder.Services.AddHealthChecks()
-    .AddMongoDb(builder.Configuration["Mongo:ConnectionString"]!, name: "mongodb");
+    .AddMongoDb(builder.Configuration["Mongo:ConnectionString"]!, name: "mongodb", timeout: TimeSpan.FromSeconds(3));
 
 var app = builder.Build();
 
 app.UseSwagger();
-app.UseSwaggerUI(c =>
+
+var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+app.UseSwaggerUI(opt =>
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Elysia API v1");
-    c.SwaggerEndpoint("/swagger/v2/swagger.json", "Elysia API v2");
-    c.RoutePrefix = "swagger";
+    foreach (var desc in provider.ApiVersionDescriptions)
+        opt.SwaggerEndpoint($"/swagger/{desc.GroupName}/swagger.json", $"Elysia API {desc.GroupName}");
+    opt.RoutePrefix = "swagger";
 });
 
 app.MapControllers();

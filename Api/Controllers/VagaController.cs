@@ -1,33 +1,28 @@
-﻿using ElysiaAPI.Application.DTOs.Request;
+﻿using Asp.Versioning;
+using ElysiaAPI.Application.DTOs.Request;
 using ElysiaAPI.Application.DTOs.Response;
-using ElysiaAPI.Domain.Entity;
-using ElysiaAPI.Infrastructure.Context;
+using ElysiaAPI.Application.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace ElysiaAPI.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+    [ApiVersion("2.0")]
+    [Route("api/v{version:apiVersion}/vagas")]
     public class VagaController : ControllerBase
     {
-        private readonly AppDbContext _context;
-        public VagaController(AppDbContext context) => _context = context;
+        private readonly VagaService _service;
+        public VagaController(VagaService service) => _service = service;
 
-        // mapper DRY
-        private static VagaResponse ToResponse(Vaga v) => new()
-        {
-            Id = v.Id,
-            Status = v.Status,
-            Numero = v.Numero,
-            Patio = v.Patio
-        };
+        // mapper DRY (igual ao seu)
+        private static VagaResponse ToResponse(VagaResponse v) => v; // Service já retorna DTO pronto
 
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<VagaResponse>), 200)]
         public async Task<ActionResult<IEnumerable<VagaResponse>>> GetVagas()
         {
-            var vagas = await _context.Vagas.AsNoTracking().ToListAsync();
+            var vagas = await _service.ListAsync();
             return Ok(vagas.Select(ToResponse));
         }
 
@@ -36,8 +31,8 @@ namespace ElysiaAPI.Controllers
         [ProducesResponseType(404)]
         public async Task<ActionResult<VagaResponse>> GetVaga(int id)
         {
-            var vaga = await _context.Vagas.FindAsync(id);
-            if (vaga == null) return NotFound();
+            var vaga = await _service.GetByIdAsync(id);
+            if (vaga is null) return NotFound();
             return Ok(ToResponse(vaga));
         }
 
@@ -46,11 +41,9 @@ namespace ElysiaAPI.Controllers
         public async Task<ActionResult<IEnumerable<VagaResponse>>> GetVagasByPatio([FromQuery] string patio)
         {
             var p = (patio ?? string.Empty).Trim();
-            var vagas = await _context.Vagas.AsNoTracking()
-                .Where(v => v.Patio == p)
-                .ToListAsync();
-
-            return Ok(vagas.Select(ToResponse));
+            var vagas = await _service.ListAsync();
+            var filtered = vagas.Where(v => string.Equals(v.Patio, p, StringComparison.OrdinalIgnoreCase));
+            return Ok(filtered.Select(ToResponse));
         }
 
         [HttpPost]
@@ -61,24 +54,12 @@ namespace ElysiaAPI.Controllers
         {
             try
             {
-                var vaga = new Vaga(request.Numero, request.Patio);
-                if (!string.IsNullOrWhiteSpace(request.Status))
-                    vaga.Status = request.Status;
-
-                _context.Vagas.Add(vaga);
-                await _context.SaveChangesAsync();
-
-                return CreatedAtAction(nameof(GetVaga), new { id = vaga.Id }, ToResponse(vaga));
+                var created = await _service.CreateAsync(request);
+                var version = HttpContext.GetRequestedApiVersion()?.ToString() ?? "1.0";
+                return CreatedAtAction(nameof(GetVaga), new { id = created.Id, version }, created);
             }
             catch (ArgumentException ex)           { return BadRequest(ex.Message); }
-            catch (InvalidOperationException ex)   { return BadRequest(ex.Message); }
-            catch (DbUpdateException ex) when (
-                (ex.InnerException?.Message?.Contains("ORA-00001") ?? false) ||
-                (ex.InnerException?.Message?.Contains("UNIQUE", StringComparison.OrdinalIgnoreCase) ?? false)
-            )
-            {
-                return Conflict($"Já existe a vaga nº {request.Numero} no pátio '{request.Patio}'.");
-            }
+            catch (InvalidOperationException ex)   { return Conflict(ex.Message); }
         }
 
         [HttpPut("{id:int}")]
@@ -88,25 +69,9 @@ namespace ElysiaAPI.Controllers
         [ProducesResponseType(409)]
         public async Task<IActionResult> UpdateVaga(int id, [FromBody] VagaRequest request)
         {
-            var vaga = await _context.Vagas.FindAsync(id);
-            if (vaga == null) return NotFound();
-
-            try
-            {
-                vaga.AtualizarLocalizacao(request.Numero, request.Patio);
-                vaga.Status = request.Status;
-                await _context.SaveChangesAsync();
-                return NoContent();
-            }
-            catch (ArgumentException ex)           { return BadRequest(ex.Message); }
-            catch (InvalidOperationException ex)   { return BadRequest(ex.Message); }
-            catch (DbUpdateException ex) when (
-                (ex.InnerException?.Message?.Contains("ORA-00001") ?? false) ||
-                (ex.InnerException?.Message?.Contains("UNIQUE", StringComparison.OrdinalIgnoreCase) ?? false)
-            )
-            {
-                return Conflict($"Já existe a vaga nº {request.Numero} no pátio '{request.Patio}'.");
-            }
+            var ok = await _service.UpdateAsync(id, request);
+            if (!ok) return NotFound();
+            return NoContent();
         }
 
         [HttpDelete("{id:int}")]
@@ -114,11 +79,8 @@ namespace ElysiaAPI.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> DeleteVaga(int id)
         {
-            var vaga = await _context.Vagas.FindAsync(id);
-            if (vaga == null) return NotFound();
-
-            _context.Vagas.Remove(vaga);
-            await _context.SaveChangesAsync();
+            var ok = await _service.DeleteAsync(id);
+            if (!ok) return NotFound();
             return NoContent();
         }
     }

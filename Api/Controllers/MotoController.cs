@@ -1,35 +1,28 @@
-﻿using ElysiaAPI.Application.DTOs.Request;
+﻿using Asp.Versioning;
+using ElysiaAPI.Application.DTOs.Request;
 using ElysiaAPI.Application.DTOs.Response;
-using ElysiaAPI.Domain.Entity;
-using ElysiaAPI.Domain.ValueObjects;
-using ElysiaAPI.Infrastructure.Context;
+using ElysiaAPI.Application.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace ElysiaAPI.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+    [ApiVersion("2.0")]
+    [Route("api/v{version:apiVersion}/motos")]
     public class MotoController : ControllerBase
     {
-        private readonly AppDbContext _context;
-        public MotoController(AppDbContext context) => _context = context;
+        private readonly MotoService _service;
+        public MotoController(MotoService service) => _service = service;
 
-        // mapper DRY
-        private static MotoResponse ToResponse(Moto m) => new()
-        {
-            Id = m.Id,
-            Placa = m.Placa.Value,
-            Marca = m.Marca,
-            Modelo = m.Modelo,
-            Ano = m.Ano
-        };
+        // mapper DRY (igual ao seu)
+        private static MotoResponse ToResponse(MotoResponse m) => m; // Service já retorna DTO pronto
 
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<MotoResponse>), 200)]
         public async Task<ActionResult<IEnumerable<MotoResponse>>> GetMotos()
         {
-            var motos = await _context.Motos.AsNoTracking().ToListAsync();
+            var motos = await _service.ListAsync();
             return Ok(motos.Select(ToResponse));
         }
 
@@ -38,8 +31,8 @@ namespace ElysiaAPI.Controllers
         [ProducesResponseType(404)]
         public async Task<ActionResult<MotoResponse>> GetMoto(int id)
         {
-            var moto = await _context.Motos.FindAsync(id);
-            if (moto == null) return NotFound();
+            var moto = await _service.GetByIdAsync(id);
+            if (moto is null) return NotFound();
             return Ok(ToResponse(moto));
         }
 
@@ -48,13 +41,9 @@ namespace ElysiaAPI.Controllers
         public async Task<ActionResult<IEnumerable<MotoResponse>>> SearchMoto([FromQuery] string placa)
         {
             placa ??= string.Empty;
-
-            var motos = await _context.Motos
-                .AsNoTracking()
-                .Where(m => EF.Functions.Like(m.Placa.Value, $"%{placa}%"))
-                .ToListAsync();
-
-            return Ok(motos.Select(ToResponse));
+            var all = await _service.ListAsync();
+            var filtered = all.Where(m => (m.Placa ?? string.Empty).Contains(placa, StringComparison.OrdinalIgnoreCase));
+            return Ok(filtered.Select(ToResponse));
         }
 
         [HttpPost]
@@ -64,17 +53,9 @@ namespace ElysiaAPI.Controllers
         {
             try
             {
-                var moto = new Moto(
-                    Placa.Create(request.Placa),
-                    request.Marca,
-                    request.Modelo,
-                    request.Ano
-                );
-
-                _context.Motos.Add(moto);
-                await _context.SaveChangesAsync();
-
-                return CreatedAtAction(nameof(GetMoto), new { id = moto.Id }, ToResponse(moto));
+                var created = await _service.CreateAsync(request);
+                var version = HttpContext.GetRequestedApiVersion()?.ToString() ?? "1.0";
+                return CreatedAtAction(nameof(GetMoto), new { id = created.Id, version }, created);
             }
             catch (ArgumentException ex)           { return BadRequest(ex.Message); }
             catch (InvalidOperationException ex)   { return BadRequest(ex.Message); }
@@ -86,18 +67,9 @@ namespace ElysiaAPI.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> UpdateMoto(int id, [FromBody] MotoRequest request)
         {
-            var moto = await _context.Motos.FindAsync(id);
-            if (moto == null) return NotFound();
-
-            try
-            {
-                moto.DefinirPlaca(Placa.Create(request.Placa));
-                moto.AtualizarDadosBasicos(request.Marca, request.Modelo, request.Ano);
-                await _context.SaveChangesAsync();
-                return NoContent();
-            }
-            catch (ArgumentException ex)           { return BadRequest(ex.Message); }
-            catch (InvalidOperationException ex)   { return BadRequest(ex.Message); }
+            var ok = await _service.UpdateAsync(id, request);
+            if (!ok) return NotFound();
+            return NoContent();
         }
 
         [HttpDelete("{id:int}")]
@@ -105,11 +77,8 @@ namespace ElysiaAPI.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> DeleteMoto(int id)
         {
-            var moto = await _context.Motos.FindAsync(id);
-            if (moto == null) return NotFound();
-
-            _context.Motos.Remove(moto);
-            await _context.SaveChangesAsync();
+            var ok = await _service.DeleteAsync(id);
+            if (!ok) return NotFound();
             return NoContent();
         }
     }
