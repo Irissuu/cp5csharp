@@ -37,7 +37,7 @@ namespace ElysiaAPI.Domain.Entity
             if (novoId <= 0) throw new ArgumentException("Id inválido.");
             if (this.Id != 0 && this.Id != novoId)
                 throw new InvalidOperationException("Id já foi definido e não pode ser alterado.");
-            this.Id = novoId; // use this.Id para evitar ambiguidade
+            this.Id = novoId; 
         }
 
     }

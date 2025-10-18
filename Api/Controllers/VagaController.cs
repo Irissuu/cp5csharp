@@ -14,9 +14,8 @@ namespace ElysiaAPI.Controllers
     {
         private readonly VagaService _service;
         public VagaController(VagaService service) => _service = service;
-
-        // mapper DRY (igual ao seu)
-        private static VagaResponse ToResponse(VagaResponse v) => v; // Service já retorna DTO pronto
+        
+        private static VagaResponse ToResponse(VagaResponse v) => v; 
 
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<VagaResponse>), 200)]

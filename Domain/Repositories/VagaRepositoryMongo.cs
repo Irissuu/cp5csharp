@@ -31,7 +31,6 @@ public class VagaRepositoryMongo : IVagaRepository
 
         await _ctx.Vagas.InsertOneAsync(doc, cancellationToken: ct);
 
-        // definir o Id na entidade de domínio
         vaga.DefinirId(doc.Id);
     }
 

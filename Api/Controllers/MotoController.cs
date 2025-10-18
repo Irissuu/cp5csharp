@@ -14,9 +14,8 @@ namespace ElysiaAPI.Controllers
     {
         private readonly MotoService _service;
         public MotoController(MotoService service) => _service = service;
-
-        // mapper DRY (igual ao seu)
-        private static MotoResponse ToResponse(MotoResponse m) => m; // Service já retorna DTO pronto
+        
+        private static MotoResponse ToResponse(MotoResponse m) => m; 
 
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<MotoResponse>), 200)]

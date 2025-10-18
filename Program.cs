@@ -44,6 +44,12 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var ctx = scope.ServiceProvider.GetRequiredService<MongoDbContext>();
+    await ElysiaAPI.Infrastructure.Mongo.MongoInitializer.EnsureAsync(ctx);
+}
+
 app.UseSwagger();
 
 var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();

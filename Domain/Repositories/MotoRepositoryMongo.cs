@@ -33,7 +33,6 @@ public class MotoRepositoryMongo : IMotoRepository
 
         await _ctx.Motos.InsertOneAsync(doc, cancellationToken: ct);
 
-        // definir o Id na entidade de domínio (sem setter público)
         moto.DefinirId(doc.Id);
     }
 
