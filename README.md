@@ -1,6 +1,7 @@
 # ElysiaAPI - CP5
 
-API RESTful desenvolvida em .NET 8 com Entity Framework Core e Oracle, parte do projeto **Elysia: Inteligência para Gestão Inteligente de Pátios** da empresa Mottu. Esta API permite o gerenciamento de **motos** e **vagas de estacionamento**, com foco em uma solução inteligente para controle de pátios.
+API RESTful desenvolvida em .NET 8 com MongoDB, parte do projeto Elysia: Inteligência para Gestão Inteligente de Pátios da empresa Mottu.
+Esta API permite o gerenciamento de motos e vagas de estacionamento, agora com integração ao MongoDB, Health Check e versionamento via Swagger, seguindo os princípios de Clean Architecture e Clean Code.
 
 ## 👥 Integrantes
 Iris Tavares Alves - 557728 - 2TDSPM
@@ -11,12 +12,12 @@ Taís Tavares Alves - 557553 - 2TDSPM
 
 ```text
 - ASP.NET Core 8
-- Entity Framework Core
-- Oracle Database
-- Swagger (OpenAPI)
-- Clean Architecture (camadas Domain, Infrastructure, Application)
-- MongoDB
-- Health Check
+- MongoDB 
+- Swagger com Versionamento
+- Health Check 
+- Clean Architecture 
+- Princípios de Clean Code
+
 ```
 
 ### 1. Clone o repositório
@@ -24,31 +25,17 @@ Taís Tavares Alves - 557553 - 2TDSPM
 git clone https://github.com/Irissuu/cp5csharp.git
 ```
 
-### 2. Configure a string de conexão
-```text
-"ConnectionStrings": {
-  "OracleDB": "User Id=SEU_USUARIO;Password=SUA_SENHA;Data Source=oracle.fiap.com.br:1521/orcl;"
-}
-```
-
-### 3. Instale os pacotes
+### 2. Instale os pacotes
 ```text
 dotnet restore
 ```
 
-### 4. Gere o banco de dados com EF Core
-```text
-dotnet ef migrations add Inicial
-dotnet ef database update
-```
-
-### 5. Execute o projeto
+### 3. Execute o projeto
 ```text
 dotnet run
 ```
 
 ## 🔁 Rotas Disponíveis (via Swagger)
-
 
 ### 🔹 MotoController
 
@@ -74,11 +61,9 @@ dotnet run
 
 ---
 
-## 🧾 Consulta no banco Oracle
+## 🧾 Consulta no MongoDB
 
-Para visualizar os dados diretamente no Oracle SQL Developer, use **aspas nos nomes das tabelas**:
-
-```sql
-SELECT * FROM "MotoCsharp";
-SELECT * FROM "VagaCsharp";
-
+Para visualizar os dados diretamente no MongoDB Compass, conecte-se em:
+```
+mongodb://localhost:27017
+```
